@@ -41,11 +41,11 @@
           "useApifyProxy": true
       },
       "editor": "proxy",
-      "sectionCaption": "Browser, page and proxy settings",
+      "sectionCaption": "Proxy settings",
       "sectionDescription": "How the browsers will behave during the scraping process."
     }
   },
   "required": [
-    "googleApiKey", "latitude", "longitude"
+    "apiKey", "latitude", "longitude"
   ]
 }
