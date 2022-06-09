@@ -1,0 +1,52 @@
+{
+  "title": "Google Places API radar search",
+  "description": "lorem ipsum",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "googleApiKey": {
+      "title": "Google API key",
+      "type": "string",
+      "description": "Required to get places nearby specified location",
+      "editor": "textfield"
+    },
+    "latitude": {
+      "title": "Latitude",
+      "type": "string",
+      "description": "Latitude as float value NN.NNNN",
+      "editor": "textfield"
+    },
+    "longitude": {
+      "title": "Longitude",
+      "type": "string",
+      "description": "Longitude as float value NN.NNNN",
+      "editor": "textfield"
+    },
+    "radiusMeters": {
+      "title": "Radius in meters",
+      "type": "integer",
+      "description": "Search area in meters around coordinates",
+      "editor": "textfield",
+      "default": 1000,
+      "example": 1000,
+      "prefill": 1000
+    },
+    "proxy": {
+      "title": "Proxy configuration",
+      "type": "object",
+      "description": "You need to use Apify proxy or custom proxies.",
+      "default": {
+          "useApifyProxy": true
+      },
+      "prefill": {
+          "useApifyProxy": true
+      },
+      "editor": "proxy",
+      "sectionCaption": "Browser, page and proxy settings",
+      "sectionDescription": "How the browsers will behave during the scraping process."
+    }
+  },
+  "required": [
+    "googleApiKey", "latitude", "longitude"
+  ]
+}
