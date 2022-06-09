@@ -4,7 +4,7 @@
   "type": "object",
   "schemaVersion": 1,
   "properties": {
-    "googleApiKey": {
+    "apiKey": {
       "title": "Google API key",
       "type": "string",
       "description": "Required to get places nearby specified location",

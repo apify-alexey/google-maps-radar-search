@@ -5,11 +5,14 @@ This way its possible to get `96 categories * 60 results === up to 5760 results`
 Categories copied from https://developers.google.com/maps/documentation/places/web-service/supported_types#table1 into code. Search is based on distance by category type, so if last place from API results is inside radius we call next page of results, otherwise saving all the results and continue till the the last category.
 Approach expected to work for distances up to 3000 meters, duplicates are filtered out (for example same place might appear in both `bar` and `cafe` categories, it will be saved only once since returned place details are equal in both cases).
 
+## External requirements
+You need to obtain your own [Google API key](https://developers.google.com/maps/documentation/places/web-service/get-api-key)
+
 ## Cost of usage
-- [Google rates](https://developers.google.com/maps/documentation/places/web-service/usage-and-billing#nearby-search) - applied as usual: 32.00 USD per 1000 calls, so getting all places should be at max `96 categories * 3 pages = 288 calls` or $9.22
+- [Google rates](https://developers.google.com/maps/documentation/places/web-service/usage-and-billing#nearby-search) applied as usual: 32.00 USD per 1000 calls, so getting all places i.e. for 1km radius should be at max `96 categories * 3 pages = 288 calls` or $9.22
 Its more efficient than doing many small searches from many locations nearby because in such case up to 25% of results are duplicates while amount of calls to get accurate results is around two times higher (for example over 500 calls to cover 1km radius). Therefore each run for 1km radius in populated area should save from $5 to $10 on Google API charges.
 
-### Iput example
+### Input example
 For advanced usage there is internal support (not displayed in input form) for custom `categories` array and `maxResults` - use with care because actor will not validate values of custom categories and max results should be in values by 20 because each page of results from Google API always returns 20 results.
 ```jsonc
 {
@@ -17,7 +20,7 @@ For advanced usage there is internal support (not displayed in input form) for c
   "latitude": "47.41168232410833",
   "longitude": "8.54417797274538",
   "radiusMeters": 1000,
-  "maxResults": 20,
+  "maxResults": 60,
   "categories": [ "cafe", "bar" ],
   "debugLog": false
 }
@@ -79,3 +82,6 @@ Output saved exactly as it comes from Google API data feed.
   "vicinity": "Hofwiesenstrasse 369 Bahnhof Oerlikon - Unterführung Mitte, Zürich"
 }
 ```
+
+### Dev notes
+You can clone actor and create your own build in Apify cloud with ENV.apiKey or ENV.APIKEY to exclude your Google API key from input (for example to prvoide support for doing secure runs from mobile or desktop apps).
