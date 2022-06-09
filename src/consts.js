@@ -98,7 +98,7 @@ const placeTypes = [
     'zoo',
 ];
 
-const msDelayForApiCalls = 15;
+const msDelayForApiCalls = 20;
 
 module.exports = {
     placeTypes,

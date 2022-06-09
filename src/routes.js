@@ -37,7 +37,11 @@ exports.handleApiResults = async ({ request, json, crawler }, { places, finished
     await sleep(msDelayForApiCalls);
 
     if (!json?.results?.length) {
-        log.error(`NO-PLACES from ${url}`);
+        if (json?.status === 'ZERO_RESULTS') {
+            log.info(`[CATEGORY]: zero results for ${category}`);
+        } else {
+            log.error(`NO-PLACES from ${url}`);
+        }
         return;
     }
 
