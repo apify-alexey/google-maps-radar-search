@@ -100,7 +100,7 @@ const placeTypes = [
 
 const msDelayForApiCalls = 15;
 
-module.exposrt = {
+module.exports = {
     placeTypes,
     msDelayForApiCalls,
 };

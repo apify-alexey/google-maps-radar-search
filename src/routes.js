@@ -10,7 +10,8 @@ exports.createApiCallsByCategory = ({ apiKey, latitude, longitude, radiusMeters,
     const apiRequests = [];
     const baseApi = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?&location=${latitude}%2C${longitude}&rankby=distance&key=${apiKey}`;
     // if input.categories array not specified use all possible placeTypes
-    for (const category of categories?.length ? categories : placeTypes) {
+    const addCategories = categories?.length ? categories : placeTypes;
+    for (const category of addCategories) {
         apiRequests.push({
             url: `${baseApi}&type=${category}`,
             userData: {
