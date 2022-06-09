@@ -1,7 +1,7 @@
 {
 	"name": "google-maps-radar-search",
 	"version": "0.0.1",
-	"description": "This is a boilerplate of an Apify actor.",
+	"description": "Get more than 60 (ALL) results per query based on latitude, longitude and radius from the Google Places API.",
 	"dependencies": {
 		"@turf/turf": "^6.5.0",
 		"apify": "^2.3.2"

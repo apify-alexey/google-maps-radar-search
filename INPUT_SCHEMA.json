@@ -1,6 +1,6 @@
 {
   "title": "Google Places API radar search",
-  "description": "lorem ipsum",
+  "description": "Get more than 60 (ALL) results per query based on latitude, longitude and radius from the Google Places API.",
   "type": "object",
   "schemaVersion": 1,
   "properties": {
@@ -26,7 +26,6 @@
       "title": "Radius in meters",
       "type": "integer",
       "description": "Search area in meters around coordinates",
-      "editor": "textfield",
       "default": 1000,
       "example": 1000,
       "prefill": 1000
