@@ -30,6 +30,12 @@
       "example": 1000,
       "prefill": 1000
     },
+    "useOfficialApiTypes": {
+      "title": "Official Api Categories",
+      "type": "boolean",
+      "description": "Use 96 official categories as listed at https://developers.google.com/maps/documentation/places/web-service/supported_types#table1",
+      "default": false
+    },
     "proxy": {
       "title": "Proxy configuration",
       "type": "object",

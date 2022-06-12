@@ -6,11 +6,15 @@ const { placeTypes, msDelayForApiCalls } = require('./consts');
 const { utils: { log, sleep } } = Apify;
 
 // create nearbysearch calls per category rankby distance
-exports.createApiCallsByCategory = ({ apiKey, latitude, longitude, radiusMeters, categories, minRadiusMeters }) => {
+exports.createApiCallsByCategory = ({ apiKey, latitude, longitude, radiusMeters, categories, minRadiusMeters, useOfficialApiTypes }) => {
     const apiRequests = [];
     const baseApi = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?&location=${latitude}%2C${longitude}&rankby=distance&key=${apiKey}`;
-    // if input.categories array not specified use all possible placeTypes
-    const addCategories = categories?.length ? categories : placeTypes;
+    // if input.categories array not specified use official Api Types or *
+    // type=* should be used instead keyword=* since * as keyword or name is deprecated and will be shut down by March 2023
+    let addCategories = useOfficialApiTypes ? placeTypes : ['*'];
+    if (categories?.length) {
+        addCategories = categories;
+    }
     log.info(`Getting ${addCategories.length} categories in ${radiusMeters} meters around coordinates ${latitude}, ${longitude}`);
     for (const category of addCategories) {
         apiRequests.push({
@@ -80,7 +84,7 @@ exports.handleApiResults = async ({ request, json, crawler }, { places }) => {
         if (json?.status === 'ZERO_RESULTS') {
             log.info(`[CATEGORY]: zero results for ${category}`);
         } else {
-            log.error(`NO-PLACES from ${url}`);
+            log.error(`NO-PLACES from ${url}`, json);
         }
         return;
     }
@@ -149,19 +153,26 @@ exports.handleApiResults = async ({ request, json, crawler }, { places }) => {
         }
     } else {
         // otherwise either radius reached or there is no more places regardless distance (i.e. 1 casino in area)
-        log.info(`[CATEGORY]: ${category} - reached end of results at ${location} within ${distanceMeters} (out of ${radiusMeters}) meters`);
+        log.info(`[CATEGORY]: ${category} - reached end at ${location} in ${distanceMeters} (out of ${radiusMeters}) meters`);
     }
 };
 
 exports.savePlaceTypes = async ({ places }) => {
+    const uncategorizedPlaces = places.filter((x) => !x?.types?.length);
+    const unofficialTypes = [];
     const placeDataTypes = [];
     for (const place of places) {
-        if (place?.types?.length) {
-            placeDataTypes.push(...place.types);
+        const types = place?.types || [];
+        for (const placeType of types) {
+            placeDataTypes.push(placeType);
+            if (!placeTypes.includes(placeType) && !unofficialTypes.includes(placeType)) {
+                unofficialTypes.push(placeType);
+            }
         }
     }
     if (placeDataTypes?.length) {
         const uniqueTypes = new Set(placeDataTypes);
         await Apify.setValue('placeDataTypes', [...uniqueTypes]);
+        log.info(`Found ${uncategorizedPlaces.length} uncategorized places and ${unofficialTypes.length} unofficial types`, unofficialTypes);
     }
 };
