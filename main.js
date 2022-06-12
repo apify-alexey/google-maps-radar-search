@@ -1,6 +1,6 @@
 const Apify = require('apify');
 
-const { createApiCallsByCategory, handleApiResults } = require('./src/routes');
+const { createApiCallsByCategory, handleApiResults, savePlaceTypes } = require('./src/routes');
 
 const { utils: { log } } = Apify;
 
@@ -10,7 +10,7 @@ Apify.main(async () => {
     input.apiKey = input.apiKey || process.env.apiKey || process.env.APIKEY;
     // default radius is 1000 meters
     input.radiusMeters = input.radiusMeters || 1000;
-    input.minRadiusMeters = input.minRadiusMeters || 500;
+    input.minRadiusMeters = input.minRadiusMeters || 125;
 
     const { apiKey, latitude, longitude, maxResults, proxy, debugLog } = input;
 
@@ -48,6 +48,7 @@ Apify.main(async () => {
     });
 
     await crawler.run();
+    await savePlaceTypes(state);
     const placesInRadius = state.places.filter((x) => x.distanceMeters < input.radiusMeters);
     log.info(`Crawl finished with ${placesInRadius.length} places in radius out of ${state.places.length} unique places in total`);
 });

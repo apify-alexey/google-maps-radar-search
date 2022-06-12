@@ -149,6 +149,19 @@ exports.handleApiResults = async ({ request, json, crawler }, { places }) => {
         }
     } else {
         // otherwise either radius reached or there is no more places regardless distance (i.e. 1 casino in area)
-        log.info(`[CATEGORY]: ${category} - reached end of results at ${location} within ${distanceMeters} meters`);
+        log.info(`[CATEGORY]: ${category} - reached end of results at ${location} within ${distanceMeters} (out of ${radiusMeters}) meters`);
+    }
+};
+
+exports.savePlaceTypes = async ({ places }) => {
+    const placeDataTypes = [];
+    for (const place of places) {
+        if (place?.types?.length) {
+            placeDataTypes.push(...place.types);
+        }
+    }
+    if (placeDataTypes?.length) {
+        const uniqueTypes = new Set(placeDataTypes);
+        await Apify.setValue('placeDataTypes', [...uniqueTypes]);
     }
 };
