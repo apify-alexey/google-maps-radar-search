@@ -23,18 +23,20 @@
       "editor": "textfield"
     },
     "radiusMeters": {
-      "title": "Radius in meters",
+      "title": "Search radius in meters",
       "type": "integer",
       "description": "Search area in meters around coordinates",
       "default": 1000,
       "example": 1000,
       "prefill": 1000
     },
-    "useOfficialApiTypes": {
-      "title": "Official Api Categories",
-      "type": "boolean",
-      "description": "Use 96 official categories as listed at https://developers.google.com/maps/documentation/places/web-service/supported_types#table1",
-      "default": false
+    "minRadiusMeters": {
+      "title": "Grid radius in meters",
+      "type": "integer",
+      "description": "Used to split search area into grid with cell size radius * 2",
+      "default": 50,
+      "example": 50,
+      "prefill": 50
     },
     "proxy": {
       "title": "Proxy configuration",

@@ -1,6 +1,6 @@
 const Apify = require('apify');
 
-const { createApiCallsByCategory, handleApiResults, savePlaceTypes } = require('./src/routes');
+const { createApiCallsByCategory, handleApiResults, savePlaceTypes, addGridPoints } = require('./src/routes');
 
 const { utils: { log } } = Apify;
 
@@ -10,7 +10,7 @@ Apify.main(async () => {
     input.apiKey = input.apiKey || process.env.apiKey || process.env.APIKEY;
     // default radius is 1000 meters
     input.radiusMeters = input.radiusMeters || 1000;
-    input.minRadiusMeters = input.minRadiusMeters || 125;
+    input.minRadiusMeters = input.minRadiusMeters || 50;
 
     const { apiKey, latitude, longitude, maxResults, proxy, debugLog } = input;
 
@@ -29,7 +29,9 @@ Apify.main(async () => {
     const persistState = async () => { await Apify.setValue('STATE', state); };
     Apify.events.on('persistState', persistState);
 
-    const requestList = await Apify.openRequestList('start-urls', createApiCallsByCategory(input));
+    const searchPoints = addGridPoints(input);
+
+    const requestList = await Apify.openRequestList('start-urls', createApiCallsByCategory(searchPoints, input));
     const requestQueue = await Apify.openRequestQueue();
     const proxyConfiguration = await Apify.createProxyConfiguration(proxy);
 
@@ -37,10 +39,10 @@ Apify.main(async () => {
         requestList,
         requestQueue,
         proxyConfiguration,
-        // must follow API Rate limit (100 requests per second)
-        // implemented as 1 maxConcurrency with sleep(msDelayForApiCalls)
-        maxConcurrency: 1,
-        maxRequestRetries: 2,
+        // follow API rate limit (100 requests per second)
+        maxConcurrency: 5,
+        maxRequestRetries: 3,
+        useSessionPool: true,
         maxRequestsPerCrawl: maxResults ? Math.floor(maxResults / 20) : undefined,
         handlePageFunction: async (context) => {
             return handleApiResults(context, state);

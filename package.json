@@ -3,6 +3,7 @@
 	"version": "0.0.1",
 	"description": "Get more than 60 (ALL) results per query based on latitude, longitude and radius from the Google Places API.",
 	"dependencies": {
+		"@googlemaps/google-maps-services-js": "^3.3.15",
 		"@turf/turf": "^6.5.0",
 		"apify": "^2.3.2"
 	},

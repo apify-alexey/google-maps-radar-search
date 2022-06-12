@@ -5,35 +5,64 @@ const { placeTypes, msDelayForApiCalls } = require('./consts');
 
 const { utils: { log, sleep } } = Apify;
 
+// const { Client } = require('@googlemaps/google-maps-services-js');
+// const client = new Client({});
+exports.getPlacesFromApiClient = async (points, input) => {
+    // TODO official API client not implemented since poorly documented and not flexible
+    return { points, input };
+};
+
+exports.addGridPoints = ({ latitude, longitude, radiusMeters, minRadiusMeters }) => {
+    const cellSide = (minRadiusMeters * 2) / 1000;
+    const fromPoint = turf.point([latitude, longitude]);
+    const maxDistanceKm = Math.sqrt(2 * (radiusMeters - minRadiusMeters) ** 2) / 1000;
+    const topLeft = turf.destination(fromPoint, maxDistanceKm, 180 + 45);
+    const bottomRight = turf.destination(fromPoint, maxDistanceKm, 45);
+    const bbox = [...topLeft.geometry.coordinates, ...bottomRight.geometry.coordinates];
+    const grid = turf.pointGrid(bbox, cellSide);
+    const circlePoints = grid.features.flatMap((point) => {
+        const distanceMeters = Math.floor(turf.distance(fromPoint, point) * 1000);
+        if (distanceMeters < radiusMeters) {
+            return [point.geometry.coordinates];
+        }
+        return [];
+    });
+
+    log.info(`Grid size ${grid.features.length} reduced to ${circlePoints.length} points in radius`, circlePoints[0]);
+    return circlePoints;
+};
+
 // create nearbysearch calls per category rankby distance
-exports.createApiCallsByCategory = ({ apiKey, latitude, longitude, radiusMeters, categories, minRadiusMeters, useOfficialApiTypes }) => {
+exports.createApiCallsByCategory = (points, { apiKey, latitude, longitude, radiusMeters, categories, minRadiusMeters, useOfficialApiTypes }) => {
     const apiRequests = [];
-    const baseApi = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?&location=${latitude}%2C${longitude}&rankby=distance&key=${apiKey}`;
     // if input.categories array not specified use official Api Types or *
     // type=* should be used instead keyword=* since * as keyword or name is deprecated and will be shut down by March 2023
     let addCategories = useOfficialApiTypes ? placeTypes : ['*'];
     if (categories?.length) {
         addCategories = categories;
     }
-    log.info(`Getting ${addCategories.length} categories in ${radiusMeters} meters around coordinates ${latitude}, ${longitude}`);
+    const baseUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
+    log.info(`Getting places in ${radiusMeters} meters around coordinates ${latitude}, ${longitude}`);
     for (const category of addCategories) {
-        apiRequests.push({
-            url: `${baseApi}&type=${category}`,
-            userData: {
-                category,
-                latitude,
-                longitude,
-                radiusMeters,
-                minRadiusMeters,
-                counter: 1,
-            },
-        });
+        for (const point of points) {
+            const baseApi = `${baseUrl}?&location=${point[0]}%2C${point[1]}&rankby=distance&key=${apiKey}`;
+            apiRequests.push({
+                url: `${baseApi}&type=${category}`,
+                userData: {
+                    category,
+                    latitude,
+                    longitude,
+                    radiusMeters: minRadiusMeters,
+                    minRadiusMeters,
+                    counter: 1,
+                },
+            });
+        }
     }
     return apiRequests;
 };
 
 // if we reach max API results for given center and radius, re-add 8 searches around request coordinates
-// this way searches can be populated as many times as necessary to get all the results
 const addSearchesAroundCirclePoints = async (request, requestQueue) => {
     const { url, userData } = request;
     const { radiusMeters } = userData;
@@ -146,14 +175,16 @@ exports.handleApiResults = async ({ request, json, crawler }, { places }) => {
     } else if (!json?.next_page_token && counter >= 3 && distanceMeters <= radiusMeters) {
         // if max results reached after known official limit it means we need to add more circles
         // to search around original location
-        log.info(`[API-LIMIT]: ${category} reached ${counter * 20} results at ${location}, ${distanceMeters} (out of ${radiusMeters}) meters`);
-        // add subsearches if minRadiusMeters not reached yet
-        if (radiusMeters > minRadiusMeters) {
+        if (radiusMeters >= minRadiusMeters) {
+            // add subsearches once
             await addSearchesAroundCirclePoints(request, crawler.requestQueue);
+            log.info(`[API-LIMIT]: ${category} reached ${counter * 20} results at ${location}, ${distanceMeters} (out of ${radiusMeters}) meters`);
+        } else {
+            log.warning(`[MAX-LIMIT]: ${category} can not continue at ${location}, ${distanceMeters} (out of ${radiusMeters}) meters`);
         }
     } else {
         // otherwise either radius reached or there is no more places regardless distance (i.e. 1 casino in area)
-        log.info(`[CATEGORY]: ${category} - reached end at ${location} in ${distanceMeters} (out of ${radiusMeters}) meters`);
+        log.info(`[CATEGORY]: ${category} reached end at ${location} in ${distanceMeters} (out of ${radiusMeters}) meters`);
     }
 };
 

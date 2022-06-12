@@ -96,9 +96,19 @@ const placeTypes = [
     'university',
     'veterinary_care',
     'zoo',
+    // unlisted categories discovered by search
+    'point_of_interest',
+    'establishment',
+    'food',
+    'finance',
+    'health',
+    'grocery_or_supermarket',
+    'general_contractor',
+    'place_of_worship',
+    'premise',
 ];
 
-const msDelayForApiCalls = 20;
+const msDelayForApiCalls = 10;
 
 module.exports = {
     placeTypes,
