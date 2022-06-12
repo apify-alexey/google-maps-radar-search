@@ -10,8 +10,9 @@ Apify.main(async () => {
     input.apiKey = input.apiKey || process.env.apiKey || process.env.APIKEY;
     // default radius is 1000 meters
     input.radiusMeters = input.radiusMeters || 1000;
+    input.minRadiusMeters = input.minRadiusMeters || 500;
 
-    const { apiKey, latitude, longitude, radiusMeters, maxResults, proxy, debugLog } = input;
+    const { apiKey, latitude, longitude, maxResults, proxy, debugLog } = input;
 
     if (!(apiKey && latitude && longitude)) {
         log.info('REQUIRED apiKey, latitude, longitude', input);
@@ -24,7 +25,6 @@ Apify.main(async () => {
 
     const state = await Apify.getValue('STATE') || {
         places: [], // saved places to checkup for duplicates
-        finishedCategory: [], // add category name when end of results is reached
     };
     const persistState = async () => { await Apify.setValue('STATE', state); };
     Apify.events.on('persistState', persistState);
@@ -40,14 +40,14 @@ Apify.main(async () => {
         // must follow API Rate limit (100 requests per second)
         // implemented as 1 maxConcurrency with sleep(msDelayForApiCalls)
         maxConcurrency: 1,
-        maxRequestRetries: 1,
+        maxRequestRetries: 2,
         maxRequestsPerCrawl: maxResults ? Math.floor(maxResults / 20) : undefined,
         handlePageFunction: async (context) => {
             return handleApiResults(context, state);
         },
     });
 
-    log.info(`Getting places in ${radiusMeters} meters around coordinates ${latitude}, ${longitude}`);
     await crawler.run();
-    log.info(`Crawl finished with full results for ${state.finishedCategory.length} categories`);
+    const placesInRadius = state.places.filter((x) => x.distanceMeters < input.radiusMeters);
+    log.info(`Crawl finished with ${placesInRadius.length} places in radius out of ${state.places.length} unique places in total`);
 });

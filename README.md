@@ -1,5 +1,5 @@
 ## Features
-Official Google Places API NearBy search can return as many as 60 results, split across three pages.
+Official Google Places API [Nearby search](https://developers.google.com/maps/documentation/places/web-service/search-nearby) can return as many as 60 results, split across three pages.
 Actor override limit and getting all places in few kilometers radius around specified geopoint by doing distance search for all available categories.
 This way its possible to get `96 categories * 60 results === up to 5760 results` with minimum amount of API calls and therefore minimal charges.
 Categories copied from https://developers.google.com/maps/documentation/places/web-service/supported_types#table1 into code. Search is based on distance by category type, so if last place from API results is inside radius we call next page of results, otherwise saving all the results and continue till the the last category.
