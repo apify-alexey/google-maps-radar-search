@@ -173,6 +173,9 @@ exports.savePlaceTypes = async ({ places }) => {
     if (placeDataTypes?.length) {
         const uniqueTypes = new Set(placeDataTypes);
         await Apify.setValue('placeDataTypes', [...uniqueTypes]);
-        log.info(`Found ${uncategorizedPlaces.length} uncategorized places and ${unofficialTypes.length} unofficial types`, unofficialTypes);
+        log.info(`Found ${uncategorizedPlaces.length} uncategorized places and ${unofficialTypes.length} unofficial types`);
+        if (unofficialTypes?.length) {
+            await Apify.setValue('typesDiscovered', unofficialTypes);
+        }
     }
 };
