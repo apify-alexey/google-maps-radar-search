@@ -2,7 +2,7 @@
 Official Google Places API [Nearby search](https://developers.google.com/maps/documentation/places/web-service/search-nearby) can return as many as 60 results, split across three pages.
 Actor overrides this limit and gets all places in a few kilometers radius around specified geopoint by doing distance search. Idea behind is to avoid anti-pattern as displayed below, since it leads to twice more API calls in order to get each additional 10% of results:
 <p align="center">
-<a href="https://raw.githubusercontent.com/apify-alexey/google-maps-radar-search/main/search-antipattern.png" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href,'_blank');return false;"><img src="https://raw.githubusercontent.com/apify-alexey/google-maps-radar-search/main/search-antipattern.png" alt="" style="width: 468px; height: 419px;" width="468" height="419" /></a>
+<img src="https://raw.githubusercontent.com/apify-alexey/google-maps-radar-search/main/search-antipattern.png" alt="" style="width: 468px; height: 419px;" width="468" height="419" />
 </p>
 Instead (all further math references for 1Km search radius with 50 meters grid radius) we can:
 <ul>
@@ -20,7 +20,7 @@ You need to obtain your own [Google API key](https://developers.google.com/maps/
 Google API might block proxy access (not expected, rare issue), if-when happens actor will show error `[BAD-REQUEST]`
 
 ## Cost of usage
-- [Google rates](https://developers.google.com/maps/documentation/places/web-service/usage-and-billing#nearby-search) applied as usual: 32.00 USD per 1000 calls, therefore each run for 1km radius in populated area should save approx $10-20 on Google API charges.
+- [Google rates](https://developers.google.com/maps/documentation/places/web-service/usage-and-billing#nearby-search) applied as usual: 32.00 USD per 1000 calls, 1km radius covered by approx 400 API calls, therefore each run for 1km radius in populated area should save approx $10-20 on Google API charges.
  
 ### Input example
 Search radius set to 1000 meters and grid radius set to 50 meters by default.
