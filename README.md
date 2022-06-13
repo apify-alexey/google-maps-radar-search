@@ -15,7 +15,10 @@ From a higher perspective even for Central Europe or USA we can find the best po
  
 ## External requirements
 You need to obtain your own [Google API key](https://developers.google.com/maps/documentation/places/web-service/get-api-key)
- 
+
+## Proxy
+Google API might block proxy access (not expected, rare issue), if-when happens actor will show error `[BAD-REQUEST]`
+
 ## Cost of usage
 - [Google rates](https://developers.google.com/maps/documentation/places/web-service/usage-and-billing#nearby-search) applied as usual: 32.00 USD per 1000 calls, therefore each run for 1km radius in populated area should save approx $10-20 on Google API charges.
  

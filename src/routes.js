@@ -114,7 +114,8 @@ exports.handleApiResults = async ({ request, json, crawler }, { places }) => {
         if (json?.status === 'ZERO_RESULTS') {
             log.info(`[CATEGORY]: zero results for ${category}`);
         } else {
-            log.error(`NO-PLACES from ${url}`, json);
+            log.error(`[BAD-REQUEST]: ${url}`, json);
+            throw new Error('BAD-REQUEST');
         }
         return;
     }

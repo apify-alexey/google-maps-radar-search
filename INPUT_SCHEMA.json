@@ -54,6 +54,6 @@
     }
   },
   "required": [
-    "apiKey", "latitude", "longitude"
+    "apiKey", "latitude", "longitude", "proxy"
   ]
 }
