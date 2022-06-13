@@ -5,10 +5,11 @@ const { placeTypes, msDelayForApiCalls } = require('./consts');
 
 const { utils: { log, sleep } } = Apify;
 
+// Official API client removed and better to be avoided since poorly documented and not flexible
+// https://github.com/googlemaps/google-maps-services-js
 // const { Client } = require('@googlemaps/google-maps-services-js');
 // const client = new Client({});
 exports.getPlacesFromApiClient = async (points, input) => {
-    // TODO official API client not implemented since poorly documented and not flexible
     return { points, input };
 };
 
@@ -204,7 +205,7 @@ exports.savePlaceTypes = async ({ places }) => {
     if (placeDataTypes?.length) {
         const uniqueTypes = new Set(placeDataTypes);
         await Apify.setValue('placeDataTypes', [...uniqueTypes]);
-        log.info(`Found ${uncategorizedPlaces.length} uncategorized places and ${unofficialTypes.length} unofficial types`);
+        log.debug(`Found ${uncategorizedPlaces.length} uncategorized places and ${unofficialTypes.length} unofficial types`);
         if (unofficialTypes?.length) {
             await Apify.setValue('typesDiscovered', unofficialTypes);
         }
