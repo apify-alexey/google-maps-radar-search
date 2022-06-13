@@ -5,10 +5,12 @@ Actor overrides this limit and gets all places in a few kilometers radius around
 <a href="https://raw.githubusercontent.com/apify-alexey/google-maps-radar-search/main/search-antipattern.png" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href,'_blank');return false;"><img src="https://raw.githubusercontent.com/apify-alexey/google-maps-radar-search/main/search-antipattern.png" alt="" style="width: 468px; height: 419px;" width="468" height="419" /></a>
 </p>
 Instead (all further math references for 1Km search radius with 50 meters grid radius) we can:
-- Create a grid from 2 x 2 km area with 100 x 100 m cells (from radius of 1000 and 50 meters)
-- Based on inner margin we have 380 cells in bounding box or 312 cells inside the search circle
-- Still, for high populated areas we can hit 60 places limit for a few cells
-- If so, we add new 8 search points at half of cell radius around such cells
+<ul>
+<li>Create a grid from 2 x 2 km area with 100 x 100 m cells (from radius of 1000 and 50 meters)</li>
+<li>Based on inner margin we have 380 cells in bounding box or 312 cells inside the search circle</li>
+<li>Still, for high populated areas we can hit 60 places limit for a few cells</li>
+<li>If so, we add new 8 search points at half of cell radius around such cells</li>
+</ul>
 From a higher perspective even for Central Europe or USA we can find the best possible cell radius for given search distance and coordinates which will give us 99% of accuracy with minimal amount of API calls. Density of places will not be changed rapidly in days or months, so the right combination for each search will allow a rescan area to find new places and keep lowest running costs.
  
 ## External requirements
