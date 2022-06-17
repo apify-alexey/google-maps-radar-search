@@ -9,7 +9,7 @@ Apify.main(async () => {
     // accept api keys from process.env for custom actor builds
     input.apiKey = input.apiKey || process.env.apiKey || process.env.APIKEY;
     // default proxy based on RESIDENTIAL group since it works the best to access Google API wo blocking
-    input.proxy = input.proxy || { useApifyProxy: true, groups: ['RESIDENTIAL'] };
+    input.proxy = input.proxy || { useApifyProxy: true };
     // default radius is 1000 meters
     input.radiusMeters = input.radiusMeters || 1000;
     input.minRadiusMeters = input.minRadiusMeters || 50;
@@ -31,7 +31,7 @@ Apify.main(async () => {
     const persistState = async () => { await Apify.setValue('STATE', state); };
     Apify.events.on('persistState', persistState);
 
-    const searchPoints = addGridPoints(input);
+    const searchPoints = await addGridPoints(input);
 
     const requestList = await Apify.openRequestList('start-urls', createApiCallsByCategory(searchPoints, input));
     const requestQueue = await Apify.openRequestQueue();

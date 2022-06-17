@@ -5,32 +5,39 @@ const { placeTypes, msDelayForApiCalls } = require('./consts');
 
 const { utils: { log, sleep } } = Apify;
 
-// Official API client removed and better to be avoided since poorly documented and not flexible
-// https://github.com/googlemaps/google-maps-services-js
-// const { Client } = require('@googlemaps/google-maps-services-js');
-// const client = new Client({});
-exports.getPlacesFromApiClient = async (points, input) => {
-    return { points, input };
+// https://geojson.org/geojson-spec.html#positions
+// GeoJSON describes an order for coordinates:
+// [longitude, latitude, elevation]
+const geoCoordinates = ({ latitude, longitude }) => {
+    // some features not converting strings to floats, so it needs to be done here as well
+    return [parseFloat(longitude), parseFloat(latitude)];
 };
 
-exports.addGridPoints = ({ latitude, longitude, radiusMeters, minRadiusMeters }) => {
+exports.addGridPoints = async ({ latitude, longitude, radiusMeters, minRadiusMeters }) => {
     const cellSide = (minRadiusMeters * 2) / 1000;
-    const fromPoint = turf.point([latitude, longitude]);
-    const maxDistanceKm = Math.sqrt(2 * (radiusMeters - minRadiusMeters) ** 2) / 1000;
-    const topLeft = turf.destination(fromPoint, maxDistanceKm, 180 + 45);
-    const bottomRight = turf.destination(fromPoint, maxDistanceKm, 45);
-    const bbox = [...topLeft.geometry.coordinates, ...bottomRight.geometry.coordinates];
-    const grid = turf.pointGrid(bbox, cellSide);
+    const fromPoint = turf.point(geoCoordinates({ latitude, longitude }));
+    const maxDistanceKm = (radiusMeters - minRadiusMeters) / 1000;
+    const buffered = turf.buffer(fromPoint, maxDistanceKm, { units: 'kilometers' });
+    await Apify.setValue('buffered', buffered); // expected accurate circle
+    const bboxObject = turf.bbox(buffered);
+    // turf.pointGrid fill internal points, while turf.circle only creates points along diameter
+    // so we fill in cell points inside bounding box
+    const grid = turf.pointGrid(turf.bboxPolygon(bboxObject).bbox, cellSide);
+    // to checkup calculated grid over GMaps custom layer GeoJSON should be reformatted as KML
+    // https://products.aspose.app/gis/en/conversion/geojson-to-kml
+    await Apify.setValue('gridPoints', grid);
+    // filtering out of circle points
     const circlePoints = grid.features.flatMap((point) => {
         const distanceMeters = Math.floor(turf.distance(fromPoint, point) * 1000);
         if (distanceMeters < radiusMeters) {
-            return [point.geometry.coordinates];
+            return [point];
         }
         return [];
     });
+    await Apify.setValue('circlePoints', { ...grid, features: circlePoints });
 
-    log.info(`Grid size ${grid.features.length} reduced to ${circlePoints.length} points in radius`, circlePoints[0]);
-    return circlePoints;
+    log.info(`Grid size ${grid.features.length} reduced to ${circlePoints.length} points in radius`);
+    return circlePoints.map((x) => x.geometry.coordinates);
 };
 
 // create nearbysearch calls per category rankby distance
@@ -46,7 +53,7 @@ exports.createApiCallsByCategory = (points, { apiKey, latitude, longitude, radiu
     log.info(`Getting places in ${radiusMeters} meters around coordinates ${latitude}, ${longitude}`);
     for (const category of addCategories) {
         for (const point of points) {
-            const baseApi = `${baseUrl}?&location=${point[0]}%2C${point[1]}&rankby=distance&key=${apiKey}`;
+            const baseApi = `${baseUrl}?&location=${point[1]}%2C${point[0]}&rankby=distance&key=${apiKey}`;
             apiRequests.push({
                 url: `${baseApi}&type=${category}`,
                 userData: {
@@ -70,8 +77,8 @@ const addSearchesAroundCirclePoints = async (request, requestQueue) => {
     const newSearchRadiusMeters = radiusMeters / 2;
     const fromURL = new URL(url);
     fromURL.searchParams.set('pagetoken', '');
-    const location = fromURL.searchParams.get('location').split(',');
-    const searchPoint = turf.point([location[0], location[1]]);
+    const locationFrom = fromURL.searchParams.get('location').split(',');
+    const searchPoint = turf.point(geoCoordinates({ latitude: locationFrom[0], longitude: locationFrom[1] }));
     // lets say we hit limit at 200m in 1000m radius, re-add 8 search points around
     // center of uncovered area: 200 + ((1000 - 200) / 2) === 600m
     /* patterns
@@ -87,7 +94,9 @@ const addSearchesAroundCirclePoints = async (request, requestQueue) => {
     for (let bearing = 0; bearing < 360; bearing += 45) {
         const newDestination = turf.destination(searchPoint, newSearchRadiusMeters / 1000, bearing);
         const coords = newDestination.geometry?.coordinates;
-        fromURL.searchParams.set('location', coords.join());
+        // GeoJSON coordinates is array in LNG-LAT order, GAPI location is LAT,LNG
+        // so we need to swtich it back and forth
+        fromURL.searchParams.set('location', `${coords[1]},${coords[0]}`);
         await requestQueue.addRequest({
             url: fromURL.toString(),
             userData: {
@@ -122,12 +131,14 @@ exports.handleApiResults = async ({ request, json, crawler }, { places }) => {
 
     const fromURL = new URL(url);
     const location = fromURL.searchParams.get('location');
+    // https://developers.google.com/maps/documentation/places/web-service/search-nearby#location
+    // The point around which to retrieve place information. This must be specified as latitude,longitude.
     const locationFrom = location.split(',');
-    const coordsFrom = turf.point([locationFrom[0], locationFrom[1]]);
+    const coordsFrom = turf.point(geoCoordinates({ latitude: locationFrom[0], longitude: locationFrom[1] }));
     // add calculated radius from search coordinates (for subsearches its different from central point)
     const results = json.results.map((place) => {
         const placeLocation = place.geometry.location;
-        const coordsTo = turf.point([placeLocation.lat, placeLocation.lng]);
+        const coordsTo = turf.point(geoCoordinates({ latitude: placeLocation.lat, longitude: placeLocation.lng }));
         return {
             coordsTo,
             distanceMeters: Math.floor(turf.distance(coordsFrom, coordsTo) * 1000),
@@ -135,7 +146,7 @@ exports.handleApiResults = async ({ request, json, crawler }, { places }) => {
         };
     });
 
-    const centralPoint = turf.point([latitude, longitude]);
+    const centralPoint = turf.point(geoCoordinates({ latitude, longitude }));
     // save unique results to dataset
     const saveNewPlaces = [];
     for (const place of results) {
