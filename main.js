@@ -37,7 +37,7 @@ Apify.main(async () => {
         const longitudeArray = searchPoints.map((x) => x[0]);
         log.debug(`latitude from ${Math.min(...latitudeArray)} to ${Math.max(...latitudeArray)}`);
         log.debug(`longitude from ${Math.min(...longitudeArray)} to ${Math.max(...longitudeArray)}`);
-        return;
+        // return;
     }
 
     const requestList = await Apify.openRequestList('start-urls', createApiCallsByCategory(searchPoints, input));

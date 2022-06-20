@@ -34,7 +34,7 @@ exports.addGridPoints = async ({ latitude, longitude, radiusMeters, minRadiusMet
     // https://products.aspose.app/gis/en/conversion/geojson-to-kml
     await Apify.setValue('gridPoints', grid);
 
-    log.info(`Grid size ${grid.features.length}`);
+    log.debug(`Grid size ${grid.features.length}`);
     return grid.features.map((x) => x.geometry.coordinates);
 };
 
@@ -48,7 +48,7 @@ exports.createApiCallsByCategory = (points, { apiKey, latitude, longitude, radiu
         addCategories = categories;
     }
     const baseUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
-    log.info(`Getting places in ${radiusMeters} meters around coordinates ${latitude}, ${longitude}`);
+    log.info(`Search places in ${radiusMeters} meters around lat-lng ${latitude}-${longitude} based on ${points?.length} grid`);
     for (const category of addCategories) {
         for (const point of points) {
             const baseApi = `${baseUrl}?&location=${point[1]}%2C${point[0]}&rankby=distance&key=${apiKey}`;
