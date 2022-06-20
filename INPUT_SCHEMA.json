@@ -38,6 +38,12 @@
       "example": 50,
       "prefill": 50
     },
+    "rescanOnLimit": {
+      "title": "Rescan once on 60 results",
+      "type": "boolean",
+      "description": "Attempt to rescan once from 8 half min radius points if 60 results per search cell reached",
+      "default": false
+    },
     "proxy": {
       "title": "Proxy configuration",
       "type": "object",

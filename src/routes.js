@@ -16,28 +16,26 @@ const geoCoordinates = ({ latitude, longitude }) => {
 exports.addGridPoints = async ({ latitude, longitude, radiusMeters, minRadiusMeters }) => {
     const cellSide = (minRadiusMeters * 2) / 1000;
     const fromPoint = turf.point(geoCoordinates({ latitude, longitude }));
-    const maxDistanceKm = (radiusMeters - minRadiusMeters) / 1000;
-    const buffered = turf.buffer(fromPoint, maxDistanceKm, { units: 'kilometers' });
+    // https://turfjs.org/docs/#pointGrid not well documented
+    // from visual checkup looks like masked points logically topLeft of each cell
+    // so we need to increase distance as (radiusMeters + minRadiusMeters * 2)
+    const maxDistanceKm = (radiusMeters + minRadiusMeters * 2) / 1000;
+    const buffered = turf.buffer(fromPoint, maxDistanceKm, {
+        steps: (radiusMeters / 1000) * 16,
+    });
     await Apify.setValue('buffered', buffered); // expected accurate circle
     const bboxObject = turf.bbox(buffered);
     // turf.pointGrid fill internal points, while turf.circle only creates points along diameter
     // so we fill in cell points inside bounding box
-    const grid = turf.pointGrid(turf.bboxPolygon(bboxObject).bbox, cellSide);
+    const grid = turf.pointGrid(turf.bboxPolygon(bboxObject).bbox, cellSide, {
+        mask: buffered,
+    });
     // to checkup calculated grid over GMaps custom layer GeoJSON should be reformatted as KML
     // https://products.aspose.app/gis/en/conversion/geojson-to-kml
     await Apify.setValue('gridPoints', grid);
-    // filtering out of circle points
-    const circlePoints = grid.features.flatMap((point) => {
-        const distanceMeters = Math.floor(turf.distance(fromPoint, point) * 1000);
-        if (distanceMeters < radiusMeters) {
-            return [point];
-        }
-        return [];
-    });
-    await Apify.setValue('circlePoints', { ...grid, features: circlePoints });
 
-    log.info(`Grid size ${grid.features.length} reduced to ${circlePoints.length} points in radius`);
-    return circlePoints.map((x) => x.geometry.coordinates);
+    log.info(`Grid size ${grid.features.length}`);
+    return grid.features.map((x) => x.geometry.coordinates);
 };
 
 // create nearbysearch calls per category rankby distance
@@ -109,7 +107,7 @@ const addSearchesAroundCirclePoints = async (request, requestQueue) => {
 };
 
 // process results from nearbysearch
-exports.handleApiResults = async ({ request, json, crawler }, { places }) => {
+exports.handleApiResults = async ({ request, json, crawler }, { places }, { rescanOnLimit }) => {
     const { url, userData } = request;
     const { category, latitude, longitude, radiusMeters, minRadiusMeters, counter } = userData;
     if (!(json && latitude && longitude && radiusMeters)) {
@@ -188,7 +186,7 @@ exports.handleApiResults = async ({ request, json, crawler }, { places }) => {
     } else if (!json?.next_page_token && counter >= 3 && distanceMeters <= radiusMeters) {
         // if max results reached after known official limit it means we need to add more circles
         // to search around original location
-        if (radiusMeters >= minRadiusMeters) {
+        if (rescanOnLimit && radiusMeters >= minRadiusMeters) {
             // add subsearches once
             await addSearchesAroundCirclePoints(request, crawler.requestQueue);
             log.info(`[API-LIMIT]: ${category} reached ${counter * 20} results at ${location}, ${distanceMeters} (out of ${radiusMeters}) meters`);

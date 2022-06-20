@@ -32,6 +32,13 @@ Apify.main(async () => {
     Apify.events.on('persistState', persistState);
 
     const searchPoints = await addGridPoints(input);
+    if (searchPoints?.length) {
+        const latitudeArray = searchPoints.map((x) => x[1]);
+        const longitudeArray = searchPoints.map((x) => x[0]);
+        log.debug(`latitude from ${Math.min(...latitudeArray)} to ${Math.max(...latitudeArray)}`);
+        log.debug(`longitude from ${Math.min(...longitudeArray)} to ${Math.max(...longitudeArray)}`);
+        return;
+    }
 
     const requestList = await Apify.openRequestList('start-urls', createApiCallsByCategory(searchPoints, input));
     const requestQueue = await Apify.openRequestQueue();
@@ -47,7 +54,7 @@ Apify.main(async () => {
         useSessionPool: true,
         maxRequestsPerCrawl: maxResults ? Math.floor(maxResults / 20) : undefined,
         handlePageFunction: async (context) => {
-            return handleApiResults(context, state);
+            return handleApiResults(context, state, input);
         },
     });
 
