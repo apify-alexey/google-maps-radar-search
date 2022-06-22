@@ -1,17 +1,9 @@
 const Apify = require('apify');
 const turf = require('@turf/turf');
 
-const { placeTypes, msDelayForApiCalls } = require('./consts');
+const { baseUrl, placeTypes, msDelayForApiCalls, geoCoordinates } = require('./consts');
 
 const { utils: { log, sleep } } = Apify;
-
-// https://geojson.org/geojson-spec.html#positions
-// GeoJSON describes an order for coordinates:
-// [longitude, latitude, elevation]
-const geoCoordinates = ({ latitude, longitude }) => {
-    // some features not converting strings to floats, so it needs to be done here as well
-    return [parseFloat(longitude), parseFloat(latitude)];
-};
 
 exports.addGridPoints = async ({ latitude, longitude, radiusMeters, minRadiusMeters }) => {
     const cellSide = (minRadiusMeters * 2) / 1000;
@@ -47,7 +39,6 @@ exports.createApiCallsByCategory = (points, { apiKey, latitude, longitude, radiu
     if (categories?.length) {
         addCategories = categories;
     }
-    const baseUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
     log.info(`Search places in ${radiusMeters} meters around lat-lng ${latitude}-${longitude} based on ${points?.length} grid`);
     for (const category of addCategories) {
         for (const point of points) {

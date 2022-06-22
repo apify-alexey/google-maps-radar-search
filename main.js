@@ -1,6 +1,7 @@
 const Apify = require('apify');
 
-const { createApiCallsByCategory, handleApiResults, savePlaceTypes, addGridPoints } = require('./src/routes');
+const { createApiCallsByCategory, handleApiResults, savePlaceTypes, addGridPoints } = require('./src/grid-search');
+const { initRootSquare, handleBBoxResults } = require('./src/bbox-search');
 
 const { utils: { log } } = Apify;
 
@@ -12,9 +13,9 @@ Apify.main(async () => {
     input.proxy = input.proxy || { useApifyProxy: true };
     // default radius is 1000 meters
     input.radiusMeters = input.radiusMeters || 1000;
-    input.minRadiusMeters = input.minRadiusMeters || 50;
+    // input.minRadiusMeters = input.minRadiusMeters || 50;
 
-    const { apiKey, latitude, longitude, maxResults, proxy, debugLog } = input;
+    const { apiKey, latitude, longitude, maxResults, minRadiusMeters, proxy, debugLog } = input;
 
     if (!(apiKey && latitude && longitude)) {
         log.info('REQUIRED apiKey, latitude, longitude', input);
@@ -31,16 +32,24 @@ Apify.main(async () => {
     const persistState = async () => { await Apify.setValue('STATE', state); };
     Apify.events.on('persistState', persistState);
 
-    const searchPoints = await addGridPoints(input);
-    if (searchPoints?.length) {
-        const latitudeArray = searchPoints.map((x) => x[1]);
-        const longitudeArray = searchPoints.map((x) => x[0]);
-        log.debug(`latitude from ${Math.min(...latitudeArray)} to ${Math.max(...latitudeArray)}`);
-        log.debug(`longitude from ${Math.min(...longitudeArray)} to ${Math.max(...longitudeArray)}`);
-        // return;
+    let startSearch;
+    // AB testing for grid or square search
+    if (minRadiusMeters) {
+        // based on grid with minRadiusMeters
+        const searchPoints = await addGridPoints(input);
+        if (searchPoints?.length) {
+            const latitudeArray = searchPoints.map((x) => x[1]);
+            const longitudeArray = searchPoints.map((x) => x[0]);
+            log.debug(`latitude from ${Math.min(...latitudeArray)} to ${Math.max(...latitudeArray)}`);
+            log.debug(`longitude from ${Math.min(...longitudeArray)} to ${Math.max(...longitudeArray)}`);
+            // return;
+        }
+        startSearch = createApiCallsByCategory(searchPoints, input);
+    } else {
+        startSearch = await initRootSquare(input);
     }
 
-    const requestList = await Apify.openRequestList('start-urls', createApiCallsByCategory(searchPoints, input));
+    const requestList = await Apify.openRequestList('start-urls', startSearch);
     const requestQueue = await Apify.openRequestQueue();
     const proxyConfiguration = await Apify.createProxyConfiguration(proxy);
 
@@ -54,6 +63,9 @@ Apify.main(async () => {
         useSessionPool: true,
         maxRequestsPerCrawl: maxResults ? Math.floor(maxResults / 20) : undefined,
         handlePageFunction: async (context) => {
+            if (context?.request?.userData?.bbox) {
+                return handleBBoxResults(context, state, input);
+            }
             return handleApiResults(context, state, input);
         },
     });
